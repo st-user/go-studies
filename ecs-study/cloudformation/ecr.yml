@@ -1,0 +1,9 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: ECR repository
+Resources: 
+  gsRepository:
+    Type: "AWS::ECR::Repository"
+    Properties:
+      RepositoryName: "gs-hello"
+      EncryptionConfiguration:
+        EncryptionType: KMS

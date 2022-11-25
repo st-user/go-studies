@@ -1,0 +1,207 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Network Resources
+Resources:
+  # VPC
+  gsVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.1.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: gsVpc
+
+  # Internet Gateway
+  gsInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: gs-igw
+  gsVpcGwAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: gsVpc
+      InternetGatewayId:
+        Ref: gsInternetGateway
+
+  # Private subnets for containers
+  gsSubnetPrivateContainer1A:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.1.8.0/24
+      VpcId:
+        Ref: gsVpc
+      AvailabilityZone: 
+        Fn::Select: 
+          - 0
+          - Fn::GetAZs: ""
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: gs-subnet-private-container-1a
+        - Key: Type
+          Value: Isolated
+  gsSubnetPrivateContainer1C:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.1.9.0/24
+      VpcId:
+        Ref: gsVpc
+      AvailabilityZone: 
+        Fn::Select: 
+          - 1
+          - Fn::GetAZs: ""
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: gs-subnet-private-container-1c
+        - Key: Type
+          Value: Isolated
+  gsRouteApp:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: gsVpc
+      Tags:
+        - Key: Name
+          Value: gs-route-app
+  gsRouteAppAssociation1A:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: gsRouteApp
+      SubnetId:
+        Ref: gsSubnetPrivateContainer1A
+  gsRouteAppAssociation1C:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: gsRouteApp
+      SubnetId:
+        Ref: gsSubnetPrivateContainer1C
+
+  # Private subnets for DB
+  gsSubnetPrivateDB1A:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.1.10.0/24
+      VpcId:
+        Ref: gsVpc
+      AvailabilityZone: 
+        Fn::Select: 
+          - 0
+          - Fn::GetAZs: ""
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: gs-subnet-private-db-1a
+        - Key: Type
+          Value: Isolated
+  gsSubnetPrivateDB1C:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.1.11.0/24
+      VpcId:
+        Ref: gsVpc
+      AvailabilityZone: 
+        Fn::Select: 
+          - 1
+          - Fn::GetAZs: ""
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: gs-subnet-private-db-1c
+        - Key: Type
+          Value: Isolated
+  gsRouteDB:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: gsVpc
+      Tags:
+        - Key: Name
+          Value: gs-route-db
+  gsRouteDBAssociation1A:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: gsRouteDB
+      SubnetId:
+        Ref: gsSubnetPrivateDB1A
+  gsRouteDBAssociation1C:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: gsRouteDB
+      SubnetId:
+        Ref: gsSubnetPrivateDB1C
+
+  # Public subnets for ALB
+  gsSubnetPublicALB1A:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.1.0.0/24
+      VpcId:
+        Ref: gsVpc
+      AvailabilityZone: 
+        Fn::Select: 
+          - 0
+          - Fn::GetAZs: ""
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: gs-subnet-public-alb-1a
+        - Key: Type
+          Value: Isolated
+  gsSubnetPublicALB1C:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.1.1.0/24
+      VpcId:
+        Ref: gsVpc
+      AvailabilityZone: 
+        Fn::Select: 
+          - 1
+          - Fn::GetAZs: ""
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: gs-subnet-public-alb-1c
+        - Key: Type
+          Value: Isolated
+  gsRouteALB:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: gsVpc
+      Tags:
+        - Key: Name
+          Value: gs-route-alb
+  gsRouteALBAssociation1A:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: gsRouteALB
+      SubnetId:
+        Ref: gsSubnetPublicALB1A
+  gsRouteALBAssociation1C:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: gsRouteALB
+      SubnetId:
+        Ref: gsSubnetPublicALB1C
+  gsRouteALBDefault:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: gsRouteALB
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: gsInternetGateway
+    DependsOn:
+      - gsVpcGwAttachment 
