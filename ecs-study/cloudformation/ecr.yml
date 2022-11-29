@@ -7,3 +7,9 @@ Resources:
       RepositoryName: "gs-hello"
       EncryptionConfiguration:
         EncryptionType: KMS
+  gsBaseRepository:
+    Type: "AWS::ECR::Repository"
+    Properties:
+      RepositoryName: "gs-base"
+      EncryptionConfiguration:
+        EncryptionType: KMS

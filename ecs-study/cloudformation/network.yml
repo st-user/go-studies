@@ -204,4 +204,85 @@ Resources:
       GatewayId:
         Ref: gsInternetGateway
     DependsOn:
-      - gsVpcGwAttachment 
+      - gsVpcGwAttachment
+
+  # Private subnets for VPC endpoints
+  gsSubnetPrivateEgress1A:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.1.248.0/24
+      VpcId:
+        Ref: gsVpc
+      AvailabilityZone: 
+        Fn::Select: 
+          - 0
+          - Fn::GetAZs: ""
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: gs-subnet-private-egress-1a
+        - Key: Type
+          Value: Isolated
+  gsSubnetPrivateEgress1C:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.1.249.0/24
+      VpcId:
+        Ref: gsVpc
+      AvailabilityZone: 
+        Fn::Select: 
+          - 1
+          - Fn::GetAZs: ""
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: gs-subnet-private-egress-1c
+        - Key: Type
+          Value: Isolated
+
+
+  # Security Groups
+  gsSgContainer:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for container
+      GroupName: container
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      Tags:
+        - Key: Name
+          Value: gs-sg-container
+      VpcId:
+        Ref: gsVpc
+  gsSgEgress:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group of VPC Endpoint
+      GroupName: egress
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      Tags:
+        - Key: Name
+          Value: gs-sg-vpce
+      VpcId:
+        Ref: gsVpc
+  ### Back container -> VPC endpoint
+  sgSgVpceFromSgContainerTCP:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      Description: HTTPS for Container App
+      FromPort: 443
+      GroupId:
+        Fn::GetAtt:
+          - gsSgEgress
+          - GroupId
+      SourceSecurityGroupId:
+        Fn::GetAtt:
+          - gsSgContainer
+          - GroupId
+      ToPort: 443

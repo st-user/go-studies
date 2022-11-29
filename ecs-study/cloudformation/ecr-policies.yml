@@ -1,16 +1,20 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: IAM Policies for ECR
 Parameters: 
-  CodeCommitRepositoryName:
-    Description: Source Repository Name
-    Default: gs-vcs-repo
+  ECRRepositoryName:
+    Description: ECR Repository Name
+    Default: gs-hello
+    Type: String
+  ECRBaseRepositoryName:
+    Description: ECR Repository Name
+    Default: gs-base
     Type: String
 
 Resources: 
   ECRManagementPolicy:
     Type: "AWS::IAM::ManagedPolicy"
     Properties:
-      ManagedPolicyName: !Sub ECRManagementPolicy-${CodeCommitRepositoryName}
+      ManagedPolicyName: !Sub ECRManagementPolicy-${ECRRepositoryName}
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -19,7 +23,8 @@ Resources:
             Action: 
               - "ecr:ListImages"
             Resource:
-              - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${CodeCommitRepositoryName}"
+              - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${ECRRepositoryName}"
+              - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${ECRBaseRepositoryName}"
           - Sid: ManageRepositoryContents
             Effect: Allow
             Action: 
@@ -35,4 +40,11 @@ Resources:
               - "ecr:CompleteLayerUpload"
               - "ecr:PutImage"
             Resource:
-              - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${CodeCommitRepositoryName}"
+              - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${ECRRepositoryName}"
+              - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${ECRBaseRepositoryName}"
+          - Sid: GetAuthorizationToken
+            Effect: Allow
+            Action:
+              - "ecr:GetAuthorizationToken"
+            Resource: "*"
+

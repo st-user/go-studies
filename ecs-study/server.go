@@ -14,7 +14,7 @@ func main() {
 		w.Write([]byte("Hello World!"))
 	})
 
-	port := 8080
+	port := 80
 	server := http.Server{
 		Addr:    ":" + strconv.Itoa(port),
 		Handler: mux,

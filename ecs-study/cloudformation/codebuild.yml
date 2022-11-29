@@ -11,7 +11,7 @@ Parameters:
     Type: String
   ManagedPolicyName1:
     Description: Managed Policy 1
-    Default: ECRManagementPolicy-gs-vcs-repo
+    Default: ECRManagementPolicy-gs-hello
     Type: String
 
 Resources: 
@@ -41,6 +41,11 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
+              - Effect: Allow
+                Resource:
+                  - !Sub "arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${CodeCommitRepositoryName}"
+                Action:
+                  - "codecommit:GitPull"
       ManagedPolicyArns:
         - !Sub arn:aws:iam::${AWS::AccountId}:policy/${ManagedPolicyName1}
 
@@ -69,7 +74,7 @@ Resources:
         Type: NO_ARTIFACTS
       LogsConfig:
         CloudWatchLogs:
-          GroupName: gs-build-log-group
+          GroupName: !Sub /aws/codebuild/${ProjectName}
           Status: ENABLED
           StreamName: gs-build-log-stream
       Tags:
