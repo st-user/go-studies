@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  #VPCID
+  VpcId:
+    Description : "VPC ID"
+    Type: AWS::EC2::VPC::Id
+
+  #InterfaceSubnet1
+  InterfaceSubnetId1:
+    Description : "Interface Subnet 1st"
+    Type : AWS::EC2::Subnet::Id
+
+  #InterfaceSubnet2
+  InterfaceSubnetId2:
+    Description : "Interface Subnet 2st"
+    Type : AWS::EC2::Subnet::Id
+
+  #Interface Security Group
+  InterfaceSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+
+  #Route table
+  TargetIP1:
+    Description : "Target IP Address"
+    Type: String
+
+Resources: 
+
+  ALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Type: "application"
+      Scheme: "internet-facing"
+      Name: gs-hello-alb
+      Tags:
+        - Key: Name
+          Value: gs-hello-alb
+      IpAddressType: ipv4
+      Subnets: 
+        - !Ref InterfaceSubnetId1
+        - !Ref InterfaceSubnetId2
+      SecurityGroups: 
+        - !Ref InterfaceSecurityGroupId
+
+  ListenerHTTP:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+      LoadBalancerArn: !Ref ALB
+      Port: 80
+      Protocol: HTTP
+  
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: gs-hello-tg
+      Tags:
+        - Key: Name
+          Value: gs-hello-tg
+      Port: 80
+      Protocol: HTTP
+      Matcher:
+        HttpCode: '200'
+      VpcId: !Ref VpcId
+      TargetType: ip
+      Targets:
+        - Id: !Ref TargetIP1
+
+Outputs:
+  ALBURL:
+    Description: ALB endpoint URL
+    Value: !Join
+        - ""
+        - - http://
+          - !GetAtt ALB.DNSName

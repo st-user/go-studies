@@ -240,8 +240,35 @@ Resources:
         - Key: Type
           Value: Isolated
 
+  ######################################
+  #         Security Groups            #
+  ######################################
 
-  # Security Groups
+  #
+  # Application Load Balancer 
+  #
+  gsSgALB:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+        GroupDescription: Security group for application load balancer
+        GroupName: ingress
+        VpcId: !Ref gsVpc
+        Tags:
+          - Key: Name
+            Value: gs-sg-ingress
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 80
+            ToPort: 80
+            CidrIp: 0.0.0.0/0
+          - IpProtocol: tcp
+            FromPort: 443
+            ToPort: 443
+            CidrIp: 0.0.0.0/0
+
+  #
+  # Containers
+  #
   gsSgContainer:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -256,6 +283,10 @@ Resources:
           Value: gs-sg-container
       VpcId:
         Ref: gsVpc
+
+  #
+  # VPC endpoints
+  #
   gsSgEgress:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -270,7 +301,28 @@ Resources:
           Value: gs-sg-vpce
       VpcId:
         Ref: gsVpc
-  ### Back container -> VPC endpoint
+  #
+  # containers -> VPC endpoints
+  # 
+  sgSgContainersFromSgALBTCP:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      Description: HTTPS for Container App
+      FromPort: 80
+      GroupId:
+        Fn::GetAtt:
+          - gsSgContainer
+          - GroupId
+      SourceSecurityGroupId:
+        Fn::GetAtt:
+          - gsSgALB
+          - GroupId
+      ToPort: 80
+
+  #
+  # containers -> VPC endpoints
+  # 
   sgSgVpceFromSgContainerTCP:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
