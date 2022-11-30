@@ -302,6 +302,24 @@ Resources:
       VpcId:
         Ref: gsVpc
   #
+  # VPC endpoints
+  #
+  gsSgManagement:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group of management instance
+      GroupName: management
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      Tags:
+        - Key: Name
+          Value: gs-sg-management
+      VpcId:
+        Ref: gsVpc
+
+  #
   # containers -> VPC endpoints
   # 
   sgSgContainersFromSgALBTCP:
@@ -319,6 +337,25 @@ Resources:
           - gsSgALB
           - GroupId
       ToPort: 80
+
+  #
+  # management -> ALB
+  # 
+  sgSgALBFromManagementTCP:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      Description: HTTPS for Container App
+      FromPort: 10080
+      GroupId:
+        Fn::GetAtt:
+          - gsSgALB
+          - GroupId
+      SourceSecurityGroupId:
+        Fn::GetAtt:
+          - gsSgManagement
+          - GroupId
+      ToPort: 10080
 
   #
   # containers -> VPC endpoints

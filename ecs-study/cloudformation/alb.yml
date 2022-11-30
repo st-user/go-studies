@@ -19,10 +19,9 @@ Parameters:
   InterfaceSecurityGroupId:
     Type: AWS::EC2::SecurityGroup::Id
 
-  #Route table
-  TargetIP1:
-    Description : "Target IP Address"
-    Type: String
+  # TargetIP1:
+  #   Description : "Target IP Address"
+  #   Type: String
 
 Resources: 
 
@@ -65,8 +64,34 @@ Resources:
         HttpCode: '200'
       VpcId: !Ref VpcId
       TargetType: ip
-      Targets:
-        - Id: !Ref TargetIP1
+      # Targets:
+      #  - Id: !Ref TargetIP1
+
+  ListenerHTTPInternal:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroupInternal
+      LoadBalancerArn: !Ref ALB
+      Port: 10080
+      Protocol: HTTP
+  
+  TargetGroupInternal:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: gs-hello-tg-internal
+      Tags:
+        - Key: Name
+          Value: gs-hello-tg-internal
+      Port: 80
+      Protocol: HTTP
+      Matcher:
+        HttpCode: '200'
+      VpcId: !Ref VpcId
+      TargetType: ip
+      # Targets:
+      #  - Id: !Ref TargetIP1
 
 Outputs:
   ALBURL:
