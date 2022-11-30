@@ -78,6 +78,7 @@ func (cr ChatRoom) Join(roomID KeyRoomID) (KeyClientID, error) {
 	cr.clientIdToRoomID[clientId] = roomID
 	clientIDs, ok := cr.roomIDToClientIDs[roomID]
 	if !ok {
+		fmt.Printf("Room = %s is created.\n", roomID)
 		clientIDs = NewClientIDSet()
 		cr.roomIDToClientIDs[roomID] = clientIDs
 	}

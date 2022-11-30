@@ -10,7 +10,9 @@ go run .
 ## Send messages
 
 ```bash
-CLIENT_ID=`curl -X POST -H 'Content-Type: application/json' -d '{ "roomID": "hello" }' http://localhost:1323/join 2>/dev/null`
+ROOM_ID=room_1
+CLIENT_ID=$(curl -X POST -H 'Content-Type: application/json' -d "{ \"roomID\": \"${ROOM_ID}\" }" http://localhost:1323/join 2>/dev/null)
+
 curl -X POST \
        -d '{ "message": "Hello World!!" }' \
        -H 'Content-Type: application/json' \
