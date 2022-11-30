@@ -22,14 +22,14 @@ func main() {
 	e := echo.New()
 
 	chatRoom := chat.NewChatRoom()
-	e.POST("/join", func(c echo.Context) error {
+	e.POST("/enter", func(c echo.Context) error {
 		body := new(JoinRequest)
 		if err := c.Bind(body); err != nil {
 			log.Error(err)
 			return c.String(http.StatusBadRequest, "Invalid Request Body")
 		}
 		roomID := chat.KeyRoomID(body.RoomId)
-		clientId, err := chatRoom.Join(roomID)
+		clientId, err := chatRoom.Enter(roomID)
 
 		if err != nil {
 			log.Error(err)
@@ -76,6 +76,18 @@ func main() {
 		}
 
 		return c.String(http.StatusOK, message)
+	})
+
+	e.DELETE("/leave", func(c echo.Context) error {
+		paramClientID, err := uuid.Parse(c.QueryParam("client_id"))
+		if err != nil {
+			log.Error(err)
+			return c.String(http.StatusBadRequest, "Invalid client_id")
+		}
+		clientId := chat.KeyClientID(paramClientID)
+		chatRoom.Leave(clientId)
+
+		return c.NoContent(http.StatusNoContent)
 	})
 
 	e.Logger.Fatal(e.Start(":1323"))
