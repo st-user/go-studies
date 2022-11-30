@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	wait_message_timeout_seconds = 5 * time.Second
+	wait_message_timeout_seconds = 120 * time.Second
 )
 
 type KeyClientID uuid.UUID
@@ -67,7 +67,6 @@ type ChatRoom struct {
 type messageChannelHandler struct {
 	mutex     *sync.Mutex
 	messageCh chan string
-	leaveCh   chan struct{}
 	isClosed  *bool
 }
 
@@ -75,30 +74,22 @@ func newMessageChannelHandler() messageChannelHandler {
 	var m sync.Mutex
 	isClosed := false
 	messageCh := make(chan string)
-	leaveCh := make(chan struct{})
 	return messageChannelHandler{
 		mutex:     &m,
 		messageCh: messageCh,
-		leaveCh:   leaveCh,
 		isClosed:  &isClosed,
 	}
 }
 
-func (m messageChannelHandler) sendWithSuccess(msg string) bool {
+func (m messageChannelHandler) send(msg string) {
 	m.mutex.Lock()
 	shouldNotOp := *m.isClosed
 	m.mutex.Unlock()
 	if shouldNotOp {
-		return false
+		return
 	}
 
-	select {
-	case m.messageCh <- msg:
-		return true
-	case <-m.leaveCh:
-		close(m.messageCh)
-		return false
-	}
+	m.messageCh <- msg
 }
 
 func (m messageChannelHandler) receiveWithSuccess() (string, bool) {
@@ -112,10 +103,8 @@ func (m messageChannelHandler) receiveWithSuccess() (string, bool) {
 	select {
 	case <-time.NewTimer(wait_message_timeout_seconds).C:
 		return "", true
-	case msg := <-m.messageCh:
-		return msg, true
-	case <-m.leaveCh:
-		return "", false
+	case msg, ok := <-m.messageCh:
+		return msg, ok
 	}
 }
 
@@ -124,7 +113,7 @@ func (m messageChannelHandler) stop() {
 	defer m.mutex.Unlock()
 
 	*m.isClosed = true
-	close(m.leaveCh)
+	close(m.messageCh)
 }
 
 func NewChatRoom() ChatRoom {
@@ -185,9 +174,7 @@ func (cr ChatRoom) SendMessage(clientID KeyClientID, message string) error {
 		handler := cr.clientIdToChan[eachClientID]
 
 		go func(handler messageChannelHandler, msg string, eachClientID KeyClientID) {
-			if !handler.sendWithSuccess(msg) {
-				cr.removeWithLock(eachClientID)
-			}
+			handler.send(msg)
 		}(handler, message, eachClientID)
 	}
 	fmt.Printf("the message has been sent to %d clients\n", clientCount)
