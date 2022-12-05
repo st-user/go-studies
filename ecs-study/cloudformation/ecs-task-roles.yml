@@ -1,0 +1,31 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  ProjectName:
+    Default: gs-hello
+    Type: String
+
+Resources: 
+  ecsTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-ecsTaskExecutionRole
+      Path: /
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+                - sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${ProjectName}-ecsTaskAccessToS3
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Resource:
+                  - !Sub arn:aws:s3:::gs-test-bucket/*
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
